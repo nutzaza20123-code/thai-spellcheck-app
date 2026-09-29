@@ -166,7 +166,7 @@ def load_dictionaries(
     on_progress: Optional["Callable[[str], None]"] = None,
 ) -> Dictionaries:
     def report(msg: str):
-        if verbose:
+        if verbose and sys.stderr is not None:
             print(msg, file=sys.stderr)
         if on_progress:
             on_progress(msg)
@@ -799,7 +799,7 @@ def analyze_document(
     on_progress: Optional["Callable[[str], None]"] = None,
 ) -> tuple["Document", list[Finding]]:
     def report(msg: str):
-        if verbose:
+        if verbose and sys.stderr is not None:
             print(msg, file=sys.stderr)
         if on_progress:
             on_progress(msg)
@@ -886,7 +886,8 @@ def analyze_footnotes_endnotes(docx_path: str, dicts: Dictionaries, check_thai: 
                         )
                         findings.extend(block_findings)
     except Exception as e:
-        print(f"⚠ อ่านเชิงอรรถ/อ้างอิงท้ายเรื่องไม่สำเร็จ: {e}", file=sys.stderr)
+        if sys.stderr is not None:
+            print(f"⚠ อ่านเชิงอรรถ/อ้างอิงท้ายเรื่องไม่สำเร็จ: {e}", file=sys.stderr)
 
     return findings
 

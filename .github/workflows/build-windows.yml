@@ -8,6 +8,11 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    env:
+      # บังคับให้ Python ใช้ UTF-8 กับ stdio/console เสมอ (ป้องกัน UnicodeEncodeError
+      # เวลาพิมพ์ข้อความไทยบน Windows console ที่ codepage อาจไม่ใช่ UTF-8)
+      PYTHONUTF8: "1"
+      PYTHONIOENCODING: "utf-8"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -24,17 +29,7 @@ jobs:
           pip install pyinstaller
 
       - name: Smoke test the engine (import + tiny CLI run)
-        shell: pwsh
-        run: |
-          python -c "import spellcheck_engine; print('engine import OK')"
-          python -c "
-          from docx import Document
-          d = Document()
-          d.add_paragraph('การทดสอบระบบ ถูกต้องครบถ้วน')
-          d.save('smoke_test.docx')
-          "
-          python spellcheck_engine.py smoke_test.docx --quiet
-          echo "CLI smoke test OK"
+        run: python ci_smoke_test.py
 
       - name: Build EXE with PyInstaller
         run: pyinstaller build.spec
