@@ -96,6 +96,14 @@ try:
 except ImportError:
     sys.exit("ขาดไลบรารี openpyxl: กรุณารัน  pip install openpyxl")
 
+# รองรับไฟล์ PDF (เสริม ไม่บังคับ) — ถ้าไม่ได้ติดตั้ง pymupdf ไว้ ระบบจะยังตรวจ .docx
+# ได้ตามปกติ เพียงแต่จะตรวจ .pdf ไม่ได้ (ดูฟังก์ชัน analyze_pdf_document)
+try:
+    import pymupdf
+    PDF_SUPPORT = True
+except ImportError:
+    PDF_SUPPORT = False
+
 
 # ============================================================================
 # ค่าคงที่ / regex
@@ -136,6 +144,18 @@ HL_REPEATCHAR = WD_COLOR_INDEX.BRIGHT_GREEN
 
 MAX_SUGGESTIONS = 5
 MAX_CONTEXT_CHARS = 60  # จำนวนตัวอักษรบริบทซ้าย/ขวาที่แสดงในรายงาน
+
+# ไฟล์พจนานุกรมศัพท์เฉพาะที่ "แนบมากับโปรแกรม" (ไม่ใช่ไฟล์เสริมที่ผู้ใช้เลือกเอง)
+# จะถูกโหลดอัตโนมัติเสมอ ไม่ต้องให้พนักงานเลือกไฟล์เอง (เช่น ศัพท์โรงงาน/การแพทย์/ทหาร)
+DEFAULT_TECHNICAL_DICT_FILENAME = "พจนานุกรมศัพท์เฉพาะ_default.txt"
+
+
+def _bundled_resource_path(filename: str) -> str:
+    """หา path เต็มของไฟล์ข้อมูลที่แนบมากับโปรแกรม ใช้ได้ทั้งตอนรันเป็นสคริปต์ .py ปกติ
+    และตอนถูก build เป็น .exe แบบ onefile ด้วย PyInstaller (ซึ่งจะแตกไฟล์ข้อมูลไปไว้ที่
+    โฟลเดอร์ชั่วคราว sys._MEIPASS ตอนรันจริง)"""
+    base = getattr(sys, "_MEIPASS", None) or os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(base, filename)
 
 
 # ============================================================================
@@ -183,16 +203,35 @@ def load_dictionaries(
     provinces_set = set(provinces())
     wiki_titles = set(thai_wikipedia_titles())  # ชื่อเฉพาะ/คำศัพท์จากวิกิพีเดียไทย
 
+    def _load_word_list_file(path: str) -> set:
+        words = set()
+        with open(path, encoding="utf-8-sig") as f:
+            for line in f:
+                w = line.strip()
+                if w and not w.startswith("#"):
+                    words.add(w)
+        return words
+
     custom_words = set()
+
+    # 1) พจนานุกรมศัพท์เฉพาะที่แนบมากับโปรแกรม (โรงงาน/อุตสาหกรรม/การแพทย์/การทหาร/อื่นๆ)
+    #    โหลดอัตโนมัติเสมอ ไม่ต้องให้ผู้ใช้เลือกไฟล์เอง
+    default_dict_path = _bundled_resource_path(DEFAULT_TECHNICAL_DICT_FILENAME)
+    default_dict_count = 0
+    if os.path.exists(default_dict_path):
+        default_words = _load_word_list_file(default_dict_path)
+        custom_words |= default_words
+        default_dict_count = len(default_words)
+
+    # 2) พจนานุกรมเสริมที่ผู้ใช้เลือกเอง (คำเฉพาะขององค์กร/เอกสารนี้)
+    extra_dict_count = 0
     if extra_dict_path:
         if not os.path.exists(extra_dict_path):
             report(f"⚠ ไม่พบไฟล์พจนานุกรมเสริม: {extra_dict_path} (ข้ามไป)")
         else:
-            with open(extra_dict_path, encoding="utf-8-sig") as f:
-                for line in f:
-                    w = line.strip()
-                    if w and not w.startswith("#"):
-                        custom_words.add(w)
+            extra_words = _load_word_list_file(extra_dict_path)
+            custom_words |= extra_words
+            extra_dict_count = len(extra_words)
 
     known_thai = orst | general | names | provinces_set | wiki_titles | custom_words | THAI_SKIP_TOKENS
     known_thai_by_len = _group_by_length(known_thai)
@@ -212,7 +251,8 @@ def load_dictionaries(
     report(
         f"  พจนานุกรมราชบัณฑิตยสถาน {len(orst):,} คำ | "
         f"คลังคำทั่วไป {len(general):,} คำ | ชื่อบุคคล/จังหวัด {len(names) + len(provinces_set):,} รายการ | "
-        f"ชื่อเฉพาะวิกิพีเดีย {len(wiki_titles):,} รายการ | พจนานุกรมเสริม {len(custom_words)} คำ"
+        f"ชื่อเฉพาะวิกิพีเดีย {len(wiki_titles):,} รายการ | "
+        f"ศัพท์เฉพาะที่แนบมากับโปรแกรม {default_dict_count} คำ | พจนานุกรมเสริมที่เลือกเอง {extra_dict_count} คำ"
     )
 
     return Dictionaries(
@@ -310,6 +350,13 @@ class Finding:
     end: Optional[int] = None
     paragraph: object = None      # อ้างอิงย่อหน้า python-docx (None ถ้าไฮไลต์กลับไม่ได้ เช่น เชิงอรรถ)
     can_highlight: bool = True
+    # ---- ใช้เฉพาะเวลาตรวจไฟล์ PDF (ดูส่วน "ตรวจไฟล์ PDF") ----
+    pdf_page: Optional[int] = None      # เลขหน้า (index เริ่มที่ 0) ในไฟล์ PDF
+    pdf_clip: Optional[tuple] = None    # กรอบพิกัด (x0,y0,x1,y1) ของบล็อกข้อความ ใช้จำกัดขอบเขตค้นหาตำแหน่งไฮไลต์
+    pdf_search_text: Optional[str] = None  # ข้อความจริงจากต้นฉบับที่ใช้ค้นหาตำแหน่งบนหน้า PDF
+    # (ต่างจาก `word` ตรงที่ `word` อาจเป็นข้อความที่ปรุงแต่งเพื่อแสดงผลในรายงาน เช่น
+    # ใส่ "|" คั่นสองก้อนข้อความ หรือใส่ช่องว่างระหว่างวลีซ้ำเพื่อให้อ่านง่าย ซึ่งอาจไม่ตรง
+    # กับข้อความจริงในไฟล์ต้นฉบับเป๊ะๆ ทำให้ค้นหาตำแหน่งบน PDF ไม่เจอ)
 
 
 def make_context(full_text: str, start: int, end: int, width: int = MAX_CONTEXT_CHARS) -> str:
@@ -893,6 +940,133 @@ def analyze_footnotes_endnotes(docx_path: str, dicts: Dictionaries, check_thai: 
 
 
 # ============================================================================
+# ส่วนที่ 6b: ตรวจไฟล์ PDF (เสริมจากไฟล์ Word) — ใช้ pymupdf ในการอ่าน/ไฮไลต์
+# ============================================================================
+#
+# แนวคิด: pymupdf ไม่ได้ "ตัดคำไทย" ให้ (มันตัดตามช่องว่างเหมือนอังกฤษ ซึ่งภาษาไทย
+# ไม่มีช่องว่างระหว่างคำ) จึงดึงข้อความออกมาเป็น "บล็อก" ต่อหน้า (ใกล้เคียงย่อหน้า)
+# แล้วส่งเข้า analyze_text_block() ตัวเดียวกับที่ใช้ตรวจ .docx ทุกอย่าง (ตัดคำ/ตรวจสะกด/
+# กติกาทั้งหมดเหมือนกัน 100%) จากนั้นค่อยใช้ page.search_for(...) ของ pymupdf ค้นหา
+# ตำแหน่ง (พิกัด) ของคำที่พบบนหน้า PDF จริง เพื่อวาดไฮไลต์ + แนบคอมเมนต์กลับเข้าไป
+#
+# ข้อจำกัดเพิ่มเติมเฉพาะ PDF (นอกจากข้อจำกัดการตัดคำไทยที่มีอยู่แล้ว):
+#   - ถ้าคำ/วลีเดียวกันปรากฏซ้ำหลายครั้งในบล็อกเดียวกัน อาจไฮไลต์ตำแหน่งแรกที่เจอ
+#     ไม่ตรงกับตำแหน่งจริงที่ตรวจพบเสมอไป
+#   - PDF ที่เป็นภาพสแกน (ไม่มีข้อความจริงอยู่ในไฟล์) จะตรวจไม่ได้ ต้อง OCR ก่อน
+#   - กล่องข้อความ/ตาราง/คอลัมน์ซับซ้อนในบางไฟล์ PDF อาจถูกอ่านสลับลำดับได้บ้าง
+
+
+PDF_HL_SPELL_HIGH = (1, 1, 0)          # เหลือง
+PDF_HL_SPELL_MED = (0.6, 1, 1)         # ฟ้าอมเขียว (turquoise)
+PDF_HL_DUPLICATE = (1, 0.75, 0.85)     # ชมพู
+PDF_HL_REPEATCHAR = (0.6, 1, 0.6)      # เขียวสด
+
+
+def _pdf_highlight_color_for(finding: Finding):
+    if finding.category == "คำ/วลีซ้ำติดกัน":
+        return PDF_HL_DUPLICATE
+    if finding.category == "ตัวอักษรซ้ำผิดปกติ":
+        return PDF_HL_REPEATCHAR
+    if finding.confidence == CONFIDENCE_HIGH:
+        return PDF_HL_SPELL_HIGH
+    return PDF_HL_SPELL_MED
+
+
+def analyze_pdf_document(
+    pdf_path: str,
+    dicts: Dictionaries,
+    check_thai: bool = True,
+    check_english: bool = True,
+    verbose: bool = True,
+    on_progress: Optional["Callable[[str], None]"] = None,
+):
+    """อ่านไฟล์ PDF ทีละหน้า/บล็อกข้อความ แล้วตรวจด้วยตรรกะเดียวกับไฟล์ Word
+    คืนค่า (fitz_doc, findings) — fitz_doc เอาไว้ใช้ต่อกับ apply_highlights_and_comments_pdf()"""
+    if not PDF_SUPPORT:
+        raise RuntimeError("ขาดไลบรารี pymupdf: กรุณารัน  pip install pymupdf")
+
+    def report(msg: str):
+        if verbose and sys.stderr is not None:
+            print(msg, file=sys.stderr)
+        if on_progress:
+            on_progress(msg)
+
+    report("กำลังเปิดไฟล์ PDF ...")
+    fitz_doc = pymupdf.open(pdf_path)
+    findings: list[Finding] = []
+
+    n_pages = len(fitz_doc)
+    for page_index in range(n_pages):
+        report(f"กำลังตรวจหน้า {page_index + 1}/{n_pages} ...")
+        page = fitz_doc[page_index]
+        blocks = page.get_text("blocks")  # (x0, y0, x1, y1, text, block_no, block_type)
+        block_counter = 0
+        for b in blocks:
+            if len(b) < 5:
+                continue
+            x0, y0, x1, y1, text = b[0], b[1], b[2], b[3], b[4]
+            if not text or not text.strip():
+                continue
+            block_counter += 1
+            location = f"หน้า {page_index + 1} (บล็อกที่ {block_counter})"
+            block_findings = analyze_text_block(
+                text, location, dicts, paragraph=None,
+                check_thai=check_thai, check_english=check_english, can_highlight=True,
+            )
+            for f in block_findings:
+                f.pdf_page = page_index
+                f.pdf_clip = (x0, y0, x1, y1)
+                if f.start is not None and f.end is not None:
+                    f.pdf_search_text = text[f.start:f.end]
+            findings.extend(block_findings)
+
+    return fitz_doc, findings
+
+
+def apply_highlights_and_comments_pdf(fitz_doc, findings: list[Finding], author: str = "ตัวตรวจอักษรอัตโนมัติ"):
+    """วาดไฮไลต์ + แนบคอมเมนต์ (popup annotation) ลงในไฟล์ PDF ตรงตำแหน่งคำที่พบ
+    ใช้ page.search_for() ค้นหาพิกัดจริงของคำ/วลีบนหน้า (จำกัดขอบเขตค้นหาด้วย clip
+    ของบล็อกที่พบคำนั้น เพื่อลดโอกาสไฮไลต์ผิดตำแหน่งเวลามีคำซ้ำหลายที่ในหน้าเดียวกัน)"""
+    applied = 0
+    skipped = 0
+    for f in findings:
+        if not f.can_highlight or f.pdf_page is None or not f.word:
+            skipped += 1
+            continue
+        page = fitz_doc[f.pdf_page]
+        clip = pymupdf.Rect(*f.pdf_clip) if f.pdf_clip else None
+        # ใช้ข้อความจริงจากต้นฉบับ (pdf_search_text) ในการค้นหาตำแหน่ง ถ้ามี เพราะ `word`
+        # อาจถูกปรุงแต่งเพื่อแสดงผล (ดูคำอธิบายที่ field pdf_search_text ใน class Finding)
+        search_text = (f.pdf_search_text or f.word).strip()
+        if not search_text:
+            skipped += 1
+            continue
+        try:
+            rects = page.search_for(search_text, clip=clip) if clip else page.search_for(search_text)
+            if not rects:
+                # บางครั้ง clip แคบเกินไป (ตัดพอดีขอบตัวอักษร) ลองค้นหาแบบไม่จำกัด clip
+                # อีกครั้งเป็นทางเลือกสำรอง
+                rects = page.search_for(search_text)
+        except Exception:
+            rects = []
+        if not rects:
+            skipped += 1
+            continue
+        rect = rects[0]
+        try:
+            annot = page.add_highlight_annot(rect)
+            annot.set_colors(stroke=_pdf_highlight_color_for(f))
+            suggestion_txt = "、".join(f.suggestions) if f.suggestions else "(ไม่มีคำแนะนำอัตโนมัติ)"
+            comment_text = f"[{f.category} | ความเชื่อมั่น: {f.confidence}]\n{f.note}\nคำแนะนำ: {suggestion_txt}"
+            annot.set_info(title=author, content=comment_text)
+            annot.update()
+            applied += 1
+        except Exception:
+            skipped += 1
+    return applied, skipped
+
+
+# ============================================================================
 # ส่วนที่ 7: รายงาน Excel
 # ============================================================================
 
@@ -998,14 +1172,16 @@ def main():
     parser.add_argument("-o", "--output-dir", default=None, help="โฟลเดอร์สำหรับเก็บผลลัพธ์ (ค่าเริ่มต้น: โฟลเดอร์เดียวกับไฟล์ต้นฉบับ)")
     parser.add_argument("--extra-dict", default=None, help="ไฟล์ .txt พจนานุกรมเสริม (คำละ 1 บรรทัด ใช้ # นำหน้าเพื่อคอมเมนต์)")
     parser.add_argument("--lang", choices=["th", "en", "both"], default="both", help="ภาษาที่จะตรวจ (ค่าเริ่มต้น: both)")
-    parser.add_argument("--no-docx", action="store_true", help="ไม่ต้องสร้างไฟล์ Word ไฮไลต์ (เอาเฉพาะรายงาน Excel)")
+    parser.add_argument("--no-docx", action="store_true", help="ไม่ต้องสร้างไฟล์ Word/PDF ไฮไลต์ (เอาเฉพาะรายงาน Excel)")
     parser.add_argument("--quiet", action="store_true", help="ไม่ต้องแสดงความคืบหน้า")
     args = parser.parse_args()
 
     if not os.path.exists(args.input):
         sys.exit(f"ไม่พบไฟล์: {args.input}")
-    if not args.input.lower().endswith((".docx",)):
-        print(f"⚠ คำเตือน: ไฟล์ '{args.input}' ไม่ใช่นามสกุล .docx จะลองเปิดดู แต่ถ้าเปิดไม่ได้อาจต้องแปลงไฟล์ก่อน", file=sys.stderr)
+
+    is_pdf = args.input.lower().endswith(".pdf")
+    if not args.input.lower().endswith((".docx", ".pdf")):
+        print(f"⚠ คำเตือน: ไฟล์ '{args.input}' ไม่ใช่นามสกุล .docx หรือ .pdf จะลองเปิดดูแบบ Word แต่ถ้าเปิดไม่ได้อาจต้องแปลงไฟล์ก่อน", file=sys.stderr)
 
     verbose = not args.quiet
     check_thai = args.lang in ("th", "both")
@@ -1015,14 +1191,27 @@ def main():
 
     if verbose:
         print(f"กำลังตรวจไฟล์: {args.input}", file=sys.stderr)
-    try:
-        doc, findings = analyze_document(args.input, dicts, check_thai=check_thai, check_english=check_english, verbose=verbose)
-    except Exception as e:
-        sys.exit(
-            f"ไม่สามารถเปิดไฟล์นี้เป็นเอกสาร Word ได้: {e}\n"
-            f"โปรดตรวจสอบว่าเป็นไฟล์ .docx ที่ไม่เสียหาย (ไฟล์ .doc แบบเก่าจะเปิดไม่ได้ "
-            f"ต้องแปลงเป็น .docx ก่อน เช่น เปิดด้วย Word แล้วกด 'บันทึกเป็น' เลือก .docx)"
-        )
+
+    if is_pdf:
+        if not PDF_SUPPORT:
+            sys.exit("ขาดไลบรารี pymupdf: กรุณารัน  pip install pymupdf  เพื่อตรวจไฟล์ PDF")
+        try:
+            doc, findings = analyze_pdf_document(args.input, dicts, check_thai=check_thai, check_english=check_english, verbose=verbose)
+        except Exception as e:
+            sys.exit(
+                f"ไม่สามารถเปิดไฟล์นี้เป็น PDF ได้: {e}\n"
+                f"โปรดตรวจสอบว่าเป็นไฟล์ .pdf ที่ไม่เสียหาย และมีข้อความจริงอยู่ในไฟล์ "
+                f"(ถ้าเป็น PDF จากการสแกน/ภาพถ่ายเอกสาร ต้อง OCR ให้เป็นข้อความก่อน)"
+            )
+    else:
+        try:
+            doc, findings = analyze_document(args.input, dicts, check_thai=check_thai, check_english=check_english, verbose=verbose)
+        except Exception as e:
+            sys.exit(
+                f"ไม่สามารถเปิดไฟล์นี้เป็นเอกสาร Word ได้: {e}\n"
+                f"โปรดตรวจสอบว่าเป็นไฟล์ .docx ที่ไม่เสียหาย (ไฟล์ .doc แบบเก่าจะเปิดไม่ได้ "
+                f"ต้องแปลงเป็น .docx ก่อน เช่น เปิดด้วย Word แล้วกด 'บันทึกเป็น' เลือก .docx)"
+            )
 
     base = os.path.splitext(os.path.basename(args.input))[0]
     out_dir = args.output_dir or os.path.dirname(os.path.abspath(args.input))
@@ -1033,23 +1222,30 @@ def main():
     if verbose:
         print(f"✓ สร้างรายงาน Excel: {excel_path}", file=sys.stderr)
 
-    docx_out_path = None
+    out_path = None
     if not args.no_docx:
-        applied, skipped, hf_skipped = apply_highlights_and_comments(doc, findings)
-        docx_out_path = os.path.join(out_dir, f"{base}_ตรวจแล้ว.docx")
-        doc.save(docx_out_path)
-        if verbose:
-            msg = f"✓ สร้างไฟล์ Word ไฮไลต์: {docx_out_path} (ไฮไลต์แล้ว {applied} จุด, ข้าม {skipped} จุดที่ซ้อนทับ/ไฮไลต์ไม่ได้)"
-            if hf_skipped:
-                msg += f" [{hf_skipped} จุดในหัวกระดาษ/ท้ายกระดาษ ไฮไลต์ได้แต่ไม่ใส่คอมเมนต์ เนื่องจากข้อจำกัดของไฟล์ Word]"
-            print(msg, file=sys.stderr)
+        if is_pdf:
+            applied, skipped = apply_highlights_and_comments_pdf(doc, findings)
+            out_path = os.path.join(out_dir, f"{base}_ตรวจแล้ว.pdf")
+            doc.save(out_path)
+            if verbose:
+                print(f"✓ สร้างไฟล์ PDF ไฮไลต์: {out_path} (ไฮไลต์แล้ว {applied} จุด, ข้าม {skipped} จุดที่หาตำแหน่งไม่ได้)", file=sys.stderr)
+        else:
+            applied, skipped, hf_skipped = apply_highlights_and_comments(doc, findings)
+            out_path = os.path.join(out_dir, f"{base}_ตรวจแล้ว.docx")
+            doc.save(out_path)
+            if verbose:
+                msg = f"✓ สร้างไฟล์ Word ไฮไลต์: {out_path} (ไฮไลต์แล้ว {applied} จุด, ข้าม {skipped} จุดที่ซ้อนทับ/ไฮไลต์ไม่ได้)"
+                if hf_skipped:
+                    msg += f" [{hf_skipped} จุดในหัวกระดาษ/ท้ายกระดาษ ไฮไลต์ได้แต่ไม่ใส่คอมเมนต์ เนื่องจากข้อจำกัดของไฟล์ Word]"
+                print(msg, file=sys.stderr)
 
     high = sum(1 for f in findings if f.confidence == CONFIDENCE_HIGH)
     med = sum(1 for f in findings if f.confidence == CONFIDENCE_MED)
     low = sum(1 for f in findings if f.confidence == CONFIDENCE_LOW)
     print(f"\nสรุปผล: พบทั้งหมด {len(findings)} จุด (ความเชื่อมั่นสูง {high} / กลาง {med} / ต่ำ {low})")
-    if docx_out_path:
-        print(f"ไฟล์ Word (ไฮไลต์+คอมเมนต์): {docx_out_path}")
+    if out_path:
+        print(f"ไฟล์ที่ไฮไลต์+คอมเมนต์: {out_path}")
     print(f"ไฟล์รายงาน Excel: {excel_path}")
 
 

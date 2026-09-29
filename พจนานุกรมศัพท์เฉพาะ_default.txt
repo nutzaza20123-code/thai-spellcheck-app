@@ -1,0 +1,606 @@
+# ============================================================================
+# พจนานุกรมศัพท์เฉพาะ_default.txt
+# ============================================================================
+# ไฟล์นี้แนบมากับโปรแกรมและถูก "โหลดอัตโนมัติเสมอ" (ไม่ต้องเลือกไฟล์เอง) เพื่อไม่ให้
+# ระบบตีธงคำศัพท์เฉพาะทาง/คำทับศัพท์ที่ใช้กันทั่วไปในโรงงาน/องค์กรว่า "สะกดผิด"
+#
+# ครอบคลุม: การผลิต/อุตสาหกรรม (Lean/Kaizen), คุณภาพ/มาตรฐาน, ความปลอดภัย,
+# คลังสินค้า/โลจิสติกส์, งานซ่อมบำรุง/วิศวกรรม/ระบบอัตโนมัติ, การแพทย์/อาชีวเวชศาสตร์,
+# การทหาร/ความมั่นคง, และศัพท์ธุรกิจ/IT ทั่วไป
+#
+# หมายเหตุ: คำย่อตัวใหญ่ล้วน (เช่น KPI, ISO, PLC, MRI) ระบบข้ามการตรวจสะกดให้อยู่แล้ว
+# โดยอัตโนมัติ (ถือว่าเป็นอักษรย่อ) จึงไม่จำเป็นต้องใส่ในไฟล์นี้ ไฟล์นี้จึงเน้นคำที่ไม่ใช่
+# ตัวย่อล้วน เช่น ชื่อเฉพาะ/คำทับศัพท์แบบผสมตัวเล็ก-ใหญ่ หรือคำที่สะกดยาก
+#
+# รูปแบบไฟล์: คำละ 1 บรรทัด, บรรทัดที่ขึ้นต้นด้วย # คือคอมเมนต์ (ข้ามไป)
+# ต้องการเพิ่มคำเอง ทำได้ 2 ทาง: (1) เพิ่มในไฟล์นี้ตรงๆ หรือ (2) ใช้ไฟล์
+# "พจนานุกรมเสริม" แยกต่างหากตอนใช้งานโปรแกรม (สำหรับคำเฉพาะขององค์กร/โครงการ)
+
+
+# ----------------------------------------------------------------------------
+# Lean Manufacturing / Kaizen / TPS (Toyota Production System) — คำทับศัพท์อังกฤษ
+# ----------------------------------------------------------------------------
+Kaizen
+kaizen
+Gemba
+gemba
+Genba
+genba
+Muda
+muda
+Mura
+mura
+Muri
+muri
+Jidoka
+jidoka
+Andon
+andon
+Kanban
+kanban
+Poka-yoke
+poka-yoke
+Pokayoke
+pokayoke
+Heijunka
+heijunka
+Nemawashi
+nemawashi
+Hansei
+hansei
+Obeya
+obeya
+Yokoten
+yokoten
+Kaikaku
+kaikaku
+Karakuri
+karakuri
+Mizusumashi
+mizusumashi
+Shojinka
+shojinka
+Chaku-chaku
+chaku-chaku
+Jishuken
+jishuken
+Hoshin
+hoshin
+Kata
+kata
+Mieruka
+mieruka
+Genchi
+genchi
+Genbutsu
+genbutsu
+Ishikawa
+Shingo
+Ohno
+Deming
+Juran
+Crosby
+Kanbanize
+Kanban board
+Andon cord
+Andon light
+Milk-run
+milk-run
+Just-in-time
+Just-In-Time
+Takt
+takt
+Takt time
+Takt-time
+Autonomation
+autonomation
+Changeover
+changeover
+Rework
+rework
+Yield rate
+Cycle time
+Lead time
+Downtime
+downtime
+Uptime
+uptime
+Bottleneck
+bottleneck
+Throughput
+throughput
+Overproduction
+Standardized work
+Standard work
+Value stream
+Root cause
+Fishbone
+fishbone
+5 Whys
+Five Whys
+Why-Why
+why-why
+Why Why Analysis
+Why-Why Analysis
+5ส
+ไคเซ็น
+ไคเซน
+เกมบะ
+เกมบา
+เกงบะ
+มูดะ
+มูระ
+มุริ
+จิโดกะ
+อันดง
+อันดอน
+คัมบัง
+คัมบังบอร์ด
+โพคะโยเกะ
+โพกะโยเกะ
+โปกาโยเกะ
+เฮย์จุนกะ
+เนมาวาชิ
+ฮันเซ
+โอเบยะ
+โยโกเทน
+ไคคาคุ
+คาราคุริ
+มิซึซุมาชิ
+โชจินกะ
+ชาคุชาคุ
+จิชูเคน
+โฮชินคันริ
+เกนจิเกมบุตสึ
+มิเอรุกะ
+โตโยต้า
+ทาคุไทม์
+ทาคท์ไทม์
+ซิกซ์ซิกม่า
+ซิกซ์ ซิกมา
+ลีน
+ลีนแมนูแฟคเจอริง
+คานบัง
+เจไอที
+ไคเซนอีเวนต์
+เกมบะวอล์ก
+เกมบ้าวอล์ค
+
+
+# ----------------------------------------------------------------------------
+# Lean / คุณภาพ — Belt levels & กระบวนการ (เขียนแบบผสมตัวเล็ก-ใหญ่ ไม่ใช่ตัวย่อล้วน)
+# ----------------------------------------------------------------------------
+Yellow Belt
+Green Belt
+Black Belt
+Master Black Belt
+Kaizen Blitz
+Gemba Kaizen
+Value Stream Mapping
+Single-Minute Exchange of Die
+Total Productive Maintenance
+Overall Equipment Effectiveness
+Statistical Process Control
+Failure Mode and Effects Analysis
+Design of Experiments
+Quality Function Deployment
+Poka Yoke
+Jidoka System
+Heijunka Box
+Kanban System
+
+
+# ----------------------------------------------------------------------------
+# คุณภาพ / มาตรฐาน / ระบบบริหารจัดการ (ISO และอื่นๆ)
+# ----------------------------------------------------------------------------
+Ishikawa Diagram
+Pareto Chart
+ปาเรโต
+อิชิคาวะ
+ซิกม่า
+ออดิท
+Audit
+audit
+ออดิเตอร์
+Auditor
+auditor
+เบนช์มาร์ก
+Benchmark
+benchmark
+Benchmarking
+เบนช์มาร์คกิ้ง
+กัมบะ
+IATF
+TS16949
+QS9000
+มอก.
+GMP
+HACCP
+BRC
+FSSC
+คิวซี
+คิวเอ
+คอนฟอร์แมนซ์
+Nonconformance
+nonconformance
+Corrective Action
+Preventive Action
+คอร์เรคทีฟแอคชั่น
+
+
+# ----------------------------------------------------------------------------
+# ความปลอดภัย / อาชีวอนามัย (Safety / EHS / OHS)
+# ----------------------------------------------------------------------------
+Lockout-Tagout
+lockout-tagout
+Near Miss
+near miss
+เนียร์มิส
+เนียร์ มิส
+เซฟตี้
+Safety Officer
+เซฟตี้ออฟฟิเซอร์
+จป.
+จป.วิชาชีพ
+จป.เทคนิค
+จป.บริหาร
+Toolbox Talk
+ทูลบ็อกซ์ทอล์ก
+Behavior Based Safety
+บีบีเอส
+Confined Space
+คอนไฟน์สเปซ
+Hot Work Permit
+ฮอตเวิร์กเพอร์มิต
+Work Permit
+เวิร์กเพอร์มิต
+ใบอนุญาตทำงาน
+Ergonomics
+ergonomics
+เออร์โกโนมิกส์
+Incident
+incident
+อินซิเดนท์
+Near-miss report
+Root Cause Analysis
+Fault Tree Analysis
+ฟอลต์ทรี
+Job Safety Analysis
+เจเอสเอ
+
+
+# ----------------------------------------------------------------------------
+# คลังสินค้า / โลจิสติกส์ / ซัพพลายเชน
+# ----------------------------------------------------------------------------
+First-In-First-Out
+Last-In-First-Out
+First-Expired-First-Out
+Economic Order Quantity
+Safety Stock
+เซฟตี้สต๊อก
+สต๊อก
+Stock
+stock
+สต็อก
+Backorder
+backorder
+แบ็คออร์เดอร์
+Cross-docking
+cross-docking
+ครอสด็อกกิ้ง
+Pick and Pack
+พิคแอนด์แพ็ค
+Put-away
+put-away
+พุตอะเวย์
+Cycle Count
+ไซเคิลเคานท์
+Warehouse Management System
+Transportation Management System
+Bill of Lading
+บิลออฟเลดิ้ง
+Incoterms
+อินโคเทอมส์
+Freight Forwarder
+เฟรทฟอร์เวิร์ดเดอร์
+Consignee
+consignee
+คอนซายนี
+Consignor
+consignor
+Demurrage
+demurrage
+เดอเรจ
+Vanning
+Devanning
+แวนนิ่ง
+ดีแวนนิ่ง
+Milk Run
+
+
+# ----------------------------------------------------------------------------
+# ซ่อมบำรุง / วิศวกรรม / ระบบอัตโนมัติ / IT
+# ----------------------------------------------------------------------------
+Programmable Logic Controller
+Human Machine Interface
+Supervisory Control and Data Acquisition
+Computer Numerical Control
+Distributed Control System
+Manufacturing Execution System
+Enterprise Resource Planning
+Overall Cycle Time
+Preventive Maintenance
+Predictive Maintenance
+Breakdown Maintenance
+เบรกดาวน์
+Breakdown
+breakdown
+เบรกดาวน์เมนเทนแนนซ์
+Downtime Analysis
+Servo Motor
+เซอร์โวมอเตอร์
+Inverter
+inverter
+อินเวอร์เตอร์
+Actuator
+actuator
+แอคชูเอเตอร์
+Sensor
+sensor
+เซนเซอร์
+Encoder
+encoder
+เอ็นโค้ดเดอร์
+Solenoid Valve
+โซลินอยด์วาล์ว
+โซลินอยด์
+Solenoid
+solenoid
+Pneumatic
+pneumatic
+นิวเมติก
+นิวเมติกส์
+Hydraulic
+hydraulic
+ไฮดรอลิก
+ไฮดรอลิค
+Calibration
+calibration
+คาลิเบรชั่น
+คาลิเบรท
+Firmware
+firmware
+เฟิร์มแวร์
+Middleware
+middleware
+มิดเดิลแวร์
+Cybersecurity
+cybersecurity
+ไซเบอร์ซิเคียวริตี้
+Internet of Things
+Edge Computing
+เอดจ์คอมพิวติ้ง
+Cloud Computing
+คลาวด์คอมพิวติ้ง
+Digital Twin
+ดิจิทัลทวิน
+Big Data
+บิ๊กดาต้า
+Machine Learning
+แมชชีนเลิร์นนิง
+Artificial Intelligence
+Robotic Process Automation
+โรโบติกโปรเซสออโตเมชัน
+Automation
+automation
+ออโตเมชัน
+ออโตเมชั่น
+
+
+# ----------------------------------------------------------------------------
+# การแพทย์ / อาชีวเวชศาสตร์ / ปฐมพยาบาล (First Aid) — ที่มักปรากฏในเอกสารโรงงาน
+# ----------------------------------------------------------------------------
+Cardiopulmonary Resuscitation
+Automated External Defibrillator
+Defibrillator
+defibrillator
+ดีฟิบริลเลเตอร์
+เครื่องกระตุกหัวใจไฟฟ้า
+Tourniquet
+tourniquet
+ทัวร์นิเก็ต
+สายรัดห้ามเลือด
+Anaphylaxis
+anaphylaxis
+แอนาฟิแล็กซิส
+ภูมิแพ้เฉียบพลัน
+Epinephrine
+epinephrine
+เอพิเนฟริน
+Resuscitation
+resuscitation
+รีซัสซิเทชัน
+Triage
+triage
+ไทรอาจ
+คัดแยกผู้บาดเจ็บ
+Sphygmomanometer
+sphygmomanometer
+เครื่องวัดความดันโลหิต
+Stethoscope
+stethoscope
+สเตโทสโคป
+Laceration
+laceration
+บาดแผลฉีกขาด
+Contusion
+contusion
+ฟกช้ำ
+Fracture
+fracture
+กระดูกหัก
+Dislocation
+dislocation
+ข้อเคลื่อน
+Sprain
+sprain
+เคล็ด
+Strain
+strain
+ยอก
+Heatstroke
+heatstroke
+ฮีทสโตรก
+โรคลมแดด
+Hypothermia
+hypothermia
+ภาวะตัวเย็นเกิน
+Dehydration
+dehydration
+ภาวะขาดน้ำ
+Hyperventilation
+hyperventilation
+หายใจเร็วเกิน
+Asphyxiation
+asphyxiation
+ภาวะขาดอากาศหายใจ
+Occupational Health
+Occupational Medicine
+อาชีวเวชศาสตร์
+Ergonomic Assessment
+Audiometry
+audiometry
+การตรวจการได้ยิน
+Spirometry
+spirometry
+การตรวจสมรรถภาพปอด
+Biological Monitoring
+Exposure Limit
+Threshold Limit Value
+Personal Protective Equipment
+Material Safety Data Sheet
+Safety Data Sheet
+Chemical Hazard
+Silicosis
+silicosis
+โรคปอดจากฝุ่นซิลิกา
+Pneumoconiosis
+pneumoconiosis
+โรคปอดจากฝุ่น
+Dermatitis
+dermatitis
+ผื่นผิวหนัง
+โรคผิวหนังอักเสบ
+Carpal Tunnel Syndrome
+Repetitive Strain Injury
+Musculoskeletal Disorder
+
+
+# ----------------------------------------------------------------------------
+# การทหาร / ความมั่นคง / ระเบียบวินัย — ที่อาจปรากฏในเอกสารองค์กร (ฝึกอบรม/รักษาความปลอดภัย)
+# ----------------------------------------------------------------------------
+พลเอก
+พลโท
+พลตรี
+พลตำรวจเอก
+พลตำรวจโท
+พลตำรวจตรี
+พันเอก
+พันโท
+พันตรี
+ร้อยเอก
+ร้อยโท
+ร้อยตรี
+จ่าสิบเอก
+จ่าสิบโท
+จ่าสิบตรี
+สิบเอก
+สิบโท
+สิบตรี
+กองทัพบก
+กองทัพเรือ
+กองทัพอากาศ
+กองบัญชาการกองทัพไทย
+ผู้บังคับบัญชา
+ผู้บัญชาการ
+เสนาธิการ
+กองรักษาความปลอดภัย
+ยามรักษาการณ์
+เวรยาม
+สายตรวจ
+ซ้อมอพยพหนีไฟ
+แผนเผชิญเหตุ
+Standard Operating Procedure
+Chain of Command
+Command Center
+ศูนย์บังคับการ
+ศูนย์ควบคุมภาวะวิกฤต
+Reconnaissance
+reconnaissance
+การลาดตระเวน
+Checkpoint
+checkpoint
+จุดตรวจ
+Perimeter Security
+CCTV
+กล้องวงจรปิด
+Access Control
+Biometric
+biometric
+ไบโอเมตริก
+Restricted Area
+เขตหวงห้าม
+เขตควบคุม
+
+
+# ----------------------------------------------------------------------------
+# ธุรกิจ / HR / การจัดการทั่วไป
+# ----------------------------------------------------------------------------
+Objectives and Key Results
+Key Performance Indicator
+Balanced Scorecard
+บาลานซ์สกอร์การ์ด
+Job Description
+Onboarding
+onboarding
+ออนบอร์ดดิ้ง
+Offboarding
+offboarding
+Performance Appraisal
+Performance Review
+Succession Planning
+ซัคเซสชั่นแพลนนิง
+Outsourcing
+outsourcing
+เอาท์ซอร์ส
+เอาต์ซอร์ส
+Outsource
+outsource
+Freelance
+freelance
+ฟรีแลนซ์
+Stakeholder
+stakeholder
+สเตคโฮลเดอร์
+Deliverable
+deliverable
+ดิลิเวอเรเบิล
+Timeline
+timeline
+ไทม์ไลน์
+Milestone
+milestone
+ไมล์สโตน
+Workflow
+workflow
+เวิร์กโฟลว์
+Turnaround Time
+เทิร์นอะราวด์ไทม์
+Escalation
+escalation
+เอสคาเลชัน
+Downsizing
+downsizing
+ดาวน์ไซซิ่ง
+Rightsizing
+rightsizing

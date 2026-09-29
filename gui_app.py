@@ -3,7 +3,7 @@
 """
 gui_app.py
 ==========
-โปรแกรมตรวจอักษรไทย-อังกฤษสำหรับไฟล์ Word (.docx) — หน้าจอสำหรับพนักงานทั่วไป
+โปรแกรมตรวจอักษรไทย-อังกฤษสำหรับไฟล์ Word (.docx) และ PDF (.pdf) — หน้าจอสำหรับพนักงานทั่วไป
 
 ใช้งานง่าย 3 ขั้นตอน: เลือกไฟล์ -> กด "เริ่มตรวจสอบ" -> เปิดผลลัพธ์
 ทำงานอยู่เบื้องหลังด้วย spellcheck_engine.py (เอนจินตรวจคำตัวเดียวกับที่ใช้ผ่าน
@@ -25,7 +25,7 @@ from tkinter.scrolledtext import ScrolledText
 
 import spellcheck_engine as engine
 
-APP_TITLE = "โปรแกรมตรวจอักษรไทย-อังกฤษ (Word)"
+APP_TITLE = "โปรแกรมตรวจอักษรไทย-อังกฤษ (Word/PDF)"
 APP_FONT_FAMILY = "Tahoma"  # ฟอนต์นี้มีมากับ Windows ทุกเครื่อง แสดงผลภาษาไทยได้ดี
 
 LIMITATIONS_TEXT = """ข้อจำกัดของโปรแกรมที่ควรทราบ
@@ -40,15 +40,21 @@ LIMITATIONS_TEXT = """ข้อจำกัดของโปรแกรมท�
 
 - ไม่รองรับข้อความในกล่องข้อความ (text box), SmartArt หรือวัตถุฝังอื่น ๆ
 
-- เชิงอรรถ/อ้างอิงท้ายเรื่อง จะถูกตรวจและแสดงในรายงาน Excel เท่านั้น
-  (ไม่สามารถไฮไลต์ย้อนกลับเข้าไฟล์ Word ได้)
+- ไฟล์ Word: เชิงอรรถ/อ้างอิงท้ายเรื่อง จะถูกตรวจและแสดงในรายงาน Excel เท่านั้น
+  (ไม่สามารถไฮไลต์ย้อนกลับเข้าไฟล์ Word ได้) และคำในหัวกระดาษ/ท้ายกระดาษ จะถูก
+  ไฮไลต์สีให้ แต่จะไม่มีคอมเมนต์คำแนะนำกำกับ (ข้อจำกัดของไฟล์ Word) ให้ดู
+  คำแนะนำในรายงาน Excel แทน
 
-- คำในหัวกระดาษ/ท้ายกระดาษ จะถูกไฮไลต์สีให้ แต่จะไม่มีคอมเมนต์คำแนะนำกำกับ
-  (ข้อจำกัดของไฟล์ Word) ให้ดูคำแนะนำในรายงาน Excel แทน
+- ไฟล์ PDF: ตรวจได้เฉพาะ PDF ที่มี "ข้อความจริง" ฝังอยู่ในไฟล์ ถ้าเป็น PDF จาก
+  การสแกน/ถ่ายภาพเอกสาร (ไม่มีข้อความ มีแต่รูปภาพ) จะต้อง OCR ให้เป็นข้อความ
+  ก่อนถึงจะตรวจได้ และถ้าคำ/วลีเดียวกันซ้ำหลายจุดในย่อหน้าเดียวกัน การไฮไลต์
+  อาจไม่ตรงตำแหน่งที่ตรวจพบเป๊ะ ๆ เสมอไป (รายละเอียดที่ถูกต้องดูในรายงาน Excel)
 
 - ชื่อเฉพาะ/ชื่อบริษัท/ศัพท์เทคนิคที่ไม่อยู่ในพจนานุกรม จะถูกตีธงว่าน่าสงสัย
-  ได้เสมอ ถ้าเอกสารของหน่วยงานมีคำเหล่านี้ซ้ำ ๆ ให้เพิ่มลงในพจนานุกรมเสริม
-  (ปุ่ม "พจนานุกรมเสริม (ถ้ามี)" ในหน้าหลัก) จะได้ไม่ถูกแจ้งซ้ำอีก
+  ได้เสมอ โปรแกรมมีพจนานุกรมศัพท์เฉพาะโรงงาน/อุตสาหกรรม/การแพทย์/การทหาร
+  แนบมาให้แล้วชุดหนึ่ง แต่ถ้าเอกสารของหน่วยงานมีคำเฉพาะอื่นซ้ำ ๆ อีก ให้เพิ่ม
+  ลงในพจนานุกรมเสริม (ปุ่ม "พจนานุกรมเสริม (ถ้ามี)" ในหน้าหลัก) จะได้ไม่ถูก
+  แจ้งซ้ำอีก
 """
 
 
@@ -92,7 +98,7 @@ class App:
         self.check_english = BooleanVar(value=True)
         self.make_docx = BooleanVar(value=True)
 
-        self.result_docx_path = None
+        self.result_out_path = None    # ไฟล์ Word หรือ PDF ที่ไฮไลต์แล้ว (แล้วแต่ชนิดไฟล์ต้นฉบับ)
         self.result_excel_path = None
         self.result_out_dir = None
 
@@ -113,13 +119,13 @@ class App:
         ttk.Button(header, text="ℹ️ ข้อจำกัด/วิธีใช้", command=self._show_about).pack(side="right")
 
         # ---------- เลือกไฟล์ ----------
-        file_frame = ttk.LabelFrame(self.root, text="1) เลือกไฟล์ Word ที่ต้องการตรวจ")
+        file_frame = ttk.LabelFrame(self.root, text="1) เลือกไฟล์ Word หรือ PDF ที่ต้องการตรวจ")
         file_frame.pack(fill="x", **pad)
         row = ttk.Frame(file_frame)
         row.pack(fill="x", padx=10, pady=10)
         entry = ttk.Entry(row, textvariable=self.input_path, font=self.default_font, state="readonly")
         entry.pack(side="left", fill="x", expand=True, padx=(0, 8))
-        ttk.Button(row, text="เลือกไฟล์ .docx ...", command=self._choose_input).pack(side="left")
+        ttk.Button(row, text="เลือกไฟล์ .docx/.pdf ...", command=self._choose_input).pack(side="left")
 
         # ---------- ตัวเลือก ----------
         opt_frame = ttk.LabelFrame(self.root, text="2) ตัวเลือก (ปกติไม่ต้องแก้อะไร)")
@@ -131,7 +137,7 @@ class App:
         ttk.Checkbutton(lang_row, text="ไทย", variable=self.check_thai).pack(side="left", padx=6)
         ttk.Checkbutton(lang_row, text="อังกฤษ", variable=self.check_english).pack(side="left", padx=6)
         ttk.Checkbutton(
-            lang_row, text="สร้างไฟล์ Word ไฮไลต์ (ไม่ติ๊ก = เอาแค่รายงาน Excel)",
+            lang_row, text="สร้างไฟล์ไฮไลต์ (Word/PDF) (ไม่ติ๊ก = เอาแค่รายงาน Excel)",
             variable=self.make_docx,
         ).pack(side="left", padx=18)
 
@@ -188,7 +194,7 @@ class App:
         btn_row = ttk.Frame(self.result_frame)
         btn_row.pack(fill="x", padx=10, pady=(0, 10))
         self.open_docx_btn = ttk.Button(
-            btn_row, text="📄 เปิดไฟล์ Word ที่ตรวจแล้ว", command=self._open_result_docx, state=DISABLED
+            btn_row, text="📄 เปิดไฟล์ที่ตรวจแล้ว", command=self._open_result_docx, state=DISABLED
         )
         self.open_docx_btn.pack(side="left", padx=(0, 8))
         self.open_excel_btn = ttk.Button(
@@ -211,8 +217,13 @@ class App:
 
     def _choose_input(self):
         path = filedialog.askopenfilename(
-            title="เลือกไฟล์ Word",
-            filetypes=[("Word Document", "*.docx"), ("ไฟล์ทั้งหมด", "*.*")],
+            title="เลือกไฟล์ Word หรือ PDF",
+            filetypes=[
+                ("Word/PDF Document", "*.docx *.pdf"),
+                ("Word Document", "*.docx"),
+                ("PDF Document", "*.pdf"),
+                ("ไฟล์ทั้งหมด", "*.*"),
+            ],
         )
         if path:
             self.input_path.set(path)
@@ -297,11 +308,24 @@ class App:
     def _run_worker(self, input_path, extra_dict, out_dir, check_thai, check_english, make_docx):
         reporter = QueueWriter(self.msg_queue)
         try:
+            is_pdf = input_path.lower().endswith(".pdf")
+            if is_pdf and not engine.PDF_SUPPORT:
+                raise RuntimeError(
+                    "ขาดไลบรารีสำหรับตรวจไฟล์ PDF (pymupdf) ในโปรแกรมนี้ กรุณาติดต่อผู้ดูแลระบบ"
+                )
+
             dicts = engine.load_dictionaries(extra_dict, verbose=False, on_progress=reporter)
-            doc, findings = engine.analyze_document(
-                input_path, dicts, check_thai=check_thai, check_english=check_english,
-                verbose=False, on_progress=reporter,
-            )
+
+            if is_pdf:
+                doc, findings = engine.analyze_pdf_document(
+                    input_path, dicts, check_thai=check_thai, check_english=check_english,
+                    verbose=False, on_progress=reporter,
+                )
+            else:
+                doc, findings = engine.analyze_document(
+                    input_path, dicts, check_thai=check_thai, check_english=check_english,
+                    verbose=False, on_progress=reporter,
+                )
 
             base = os.path.splitext(os.path.basename(input_path))[0]
             os.makedirs(out_dir, exist_ok=True)
@@ -310,13 +334,20 @@ class App:
             reporter("กำลังสร้างรายงาน Excel ...")
             engine.build_excel_report(findings, excel_path, os.path.basename(input_path))
 
-            docx_out_path = None
+            out_path = None
             if make_docx:
-                reporter("กำลังสร้างไฟล์ Word ไฮไลต์ ...")
-                applied, skipped, hf_skipped = engine.apply_highlights_and_comments(doc, findings)
-                docx_out_path = os.path.join(out_dir, f"{base}_ตรวจแล้ว.docx")
-                doc.save(docx_out_path)
-                reporter(f"ไฮไลต์แล้ว {applied} จุด (ข้าม {skipped} จุดที่ซ้อนทับ/ไฮไลต์ไม่ได้)")
+                if is_pdf:
+                    reporter("กำลังสร้างไฟล์ PDF ไฮไลต์ ...")
+                    applied, skipped = engine.apply_highlights_and_comments_pdf(doc, findings)
+                    out_path = os.path.join(out_dir, f"{base}_ตรวจแล้ว.pdf")
+                    doc.save(out_path)
+                    reporter(f"ไฮไลต์แล้ว {applied} จุด (ข้าม {skipped} จุดที่หาตำแหน่งไม่ได้/ไม่รองรับ)")
+                else:
+                    reporter("กำลังสร้างไฟล์ Word ไฮไลต์ ...")
+                    applied, skipped, hf_skipped = engine.apply_highlights_and_comments(doc, findings)
+                    out_path = os.path.join(out_dir, f"{base}_ตรวจแล้ว.docx")
+                    doc.save(out_path)
+                    reporter(f"ไฮไลต์แล้ว {applied} จุด (ข้าม {skipped} จุดที่ซ้อนทับ/ไฮไลต์ไม่ได้)")
 
             high = sum(1 for f in findings if f.confidence == engine.CONFIDENCE_HIGH)
             med = sum(1 for f in findings if f.confidence == engine.CONFIDENCE_MED)
@@ -326,7 +357,7 @@ class App:
                 "done",
                 {
                     "total": len(findings), "high": high, "med": med, "low": low,
-                    "docx": docx_out_path, "excel": excel_path, "out_dir": out_dir,
+                    "out_path": out_path, "excel": excel_path, "out_dir": out_dir,
                 },
             ))
         except Exception as e:
@@ -349,7 +380,7 @@ class App:
 
     def _on_done(self, info):
         self._set_busy(False)
-        self.result_docx_path = info["docx"]
+        self.result_out_path = info["out_path"]
         self.result_excel_path = info["excel"]
         self.result_out_dir = info["out_dir"]
 
@@ -359,7 +390,7 @@ class App:
                 f"ความเชื่อมั่นสูง {info['high']} / กลาง {info['med']} / ต่ำ {info['low']}"
             )
         )
-        if self.result_docx_path:
+        if self.result_out_path:
             self.open_docx_btn.configure(state=NORMAL)
         self.open_excel_btn.configure(state=NORMAL)
         self.open_folder_btn.configure(state=NORMAL)
@@ -373,12 +404,13 @@ class App:
         messagebox.showerror(
             APP_TITLE,
             "เกิดข้อผิดพลาดระหว่างตรวจสอบไฟล์\n\n"
-            "กรุณาตรวจสอบว่าไฟล์เป็น .docx ที่ไม่เสียหาย (ไฟล์ .doc แบบเก่าต้องแปลง\n"
-            "เป็น .docx ก่อน) ถ้ายังไม่ได้ ให้ดูรายละเอียดในช่อง \"สถานะการทำงาน\"",
+            "กรุณาตรวจสอบว่าไฟล์เป็น .docx หรือ .pdf ที่ไม่เสียหาย (ไฟล์ .doc แบบเก่าต้องแปลง\n"
+            "เป็น .docx ก่อน / PDF ต้องมีข้อความจริงในไฟล์ ไม่ใช่ไฟล์สแกนเป็นภาพล้วน)\n"
+            "ถ้ายังไม่ได้ ให้ดูรายละเอียดในช่อง \"สถานะการทำงาน\"",
         )
 
     def _open_result_docx(self):
-        self._open_path(self.result_docx_path)
+        self._open_path(self.result_out_path)
 
     def _open_result_excel(self):
         self._open_path(self.result_excel_path)

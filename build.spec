@@ -11,22 +11,30 @@ PyInstaller build spec สำหรับ "โปรแกรมตรวจอ�
 ผลลัพธ์จะอยู่ที่ dist/ThaiSpellCheckApp.exe (ไฟล์เดียว รันได้ทันทีแบบออฟไลน์)
 """
 
-from PyInstaller.utils.hooks import collect_data_files, collect_submodules
+from PyInstaller.utils.hooks import collect_data_files, collect_submodules, collect_dynamic_libs
 
 datas = []
 hiddenimports = []
+binaries = []
 
-for pkg in ("pythainlp", "docx", "spellchecker"):
+for pkg in ("pythainlp", "docx", "spellchecker", "pymupdf"):
     datas += collect_data_files(pkg)
 
 hiddenimports += collect_submodules("pythainlp")
+hiddenimports += ["pymupdf", "fitz"]  # fitz = ชื่อเดิม/ชื่อรอง ของแพ็กเกจ pymupdf
+binaries += collect_dynamic_libs("pymupdf")
+
+# ไฟล์พจนานุกรมศัพท์เฉพาะที่แนบมากับโปรแกรม (โหลดอัตโนมัติเสมอ ดู
+# DEFAULT_TECHNICAL_DICT_FILENAME ใน spellcheck_engine.py) ต้องแนบเข้า .exe ไปด้วย
+# เพราะไม่ใช่ไฟล์ข้อมูลของไลบรารีที่ pip ติดตั้ง (จึง collect_data_files หาไม่เจอ)
+datas.append(("พจนานุกรมศัพท์เฉพาะ_default.txt", "."))
 
 block_cipher = None
 
 a = Analysis(
     ["gui_app.py"],
     pathex=[],
-    binaries=[],
+    binaries=binaries,
     datas=datas,
     hiddenimports=hiddenimports,
     hookspath=[],
